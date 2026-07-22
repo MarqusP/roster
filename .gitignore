@@ -27,3 +27,10 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Real alumni data (PII) staged for one-time import -- never commit
+alumni-import-ready.csv
+
+# Firebase Admin service account credentials -- never commit
+service-account-key.json
+.vercel

@@ -1,5 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 // Values come from Vite env vars (see .env.example). These are safe to expose
 // to the browser -- Firebase's "config" is a public client identifier, not a
@@ -21,3 +22,5 @@ if (firebaseReady) {
 }
 
 export const db = firebaseReady ? getFirestore(app) : null;
+export const auth = firebaseReady ? getAuth(app) : null;
+export const googleProvider = new GoogleAuthProvider();

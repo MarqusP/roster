@@ -5,9 +5,10 @@ Members browse the roster, draft a personalized outreach email with AI
 assistance, and keep private notes on who they've reached out to.
 
 - **Shared roster** — one alumni directory, synced live across every member via Firebase.
-- **Import from your Google Sheet** — upload a CSV export (or paste it in) and map the columns once.
+- **Google sign-in required** — members sign in with Google before using the app.
+- **Import from your Google Sheet** — upload a CSV export (or paste it in). Your sheet's header row must use the fixed column names (Name, Email, Company, Title, Industry, Location, Grad Year, LinkedIn) — see [`src/utils/csv.js`](./src/utils/csv.js).
 - **AI-drafted emails** — pick a purpose (informational interview, referral, etc.) and get a personalized draft to edit and send from your own email client.
-- **Personal outreach tracking** — each member's own "contacted / replied / meeting scheduled" notes stay private on their device (not shared across members, by design).
+- **Personal outreach tracking** — each member's own "contacted / replied / meeting scheduled" notes and profile info are tied to their Google account and synced via Firestore, so they follow that member across devices (not shared with other members).
 
 ## Tech stack
 
@@ -30,7 +31,9 @@ cp .env.example .env
 2. In the project, go to **Build → Firestore Database → Create database**. Start in **production mode** (we'll set our own rules below) and pick a nearby region.
 3. Go to **Project settings → General → Your apps**, click the **</>** (web) icon, register an app (no need for Firebase Hosting), and copy the `firebaseConfig` values into your `.env` file as the matching `VITE_FIREBASE_*` variables.
 4. In **Firestore Database → Rules**, replace the contents with what's in [`firestore.rules`](./firestore.rules) in this repo, then **Publish**.
-   - These rules are intentionally open (no login system) so any member with the app link can read and add to the roster. That's fine for a small trusted group. If you want tighter control later, add Firebase Authentication and restrict the rules to signed-in / allowlisted members.
+   - These rules require a signed-in user for every read/write, and restrict each member's personal `users/{uid}` doc to that member only.
+5. Go to **Build → Authentication → Get started**, then **Sign-in method → Add new provider → Google**, and enable it. Set a support email if prompted, then **Save**.
+   - Also add your local/deployed domain (e.g. `localhost`, your Vercel domain) under **Authentication → Settings → Authorized domains** if it's not already listed.
 
 ### Run it
 

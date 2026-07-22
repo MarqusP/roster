@@ -5,13 +5,13 @@ import { db, firebaseReady } from "../firebase.js";
 // Chapter-wide settings (currently just the chapter name shown on the
 // letterhead) live in one shared Firestore document.
 export function useSettings() {
-  const [chapterName, setChapterNameState] = useState("");
+  const [chapterName, setChapterNameState] = useState("Alpha Kappa Psi");
 
   useEffect(() => {
     if (!firebaseReady) return undefined;
     const ref = doc(db, "settings", "main");
     const unsubscribe = onSnapshot(ref, (snap) => {
-      setChapterNameState(snap.exists() ? snap.data().chapterName || "" : "");
+      setChapterNameState(snap.exists() ? snap.data().chapterName || "Alpha Kappa Psi" : "Alpha Kappa Psi");
     });
     return unsubscribe;
   }, []);

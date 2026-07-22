@@ -9,7 +9,8 @@ import ImportModal from "./components/ImportModal.jsx";
 import MyInfoModal from "./components/MyInfoModal.jsx";
 import { useAlumni } from "./hooks/useAlumni.js";
 import { useSettings } from "./hooks/useSettings.js";
-import { useLocalStorageState } from "./hooks/useLocalStorageState.js";
+import { useAuth } from "./hooks/useAuth.js";
+import { useUserData } from "./hooks/useUserData.js";
 import { toCsv } from "./utils/csv.js";
 import { firebaseReady } from "./firebase.js";
 
@@ -23,10 +24,10 @@ const STATUS_LABELS = {
 
 function AppInner() {
   const showToast = useToast();
+  const { user, authLoading, signIn, signOutUser } = useAuth();
   const { alumni, loading, error, addAlumnus, importMany, clearAll } = useAlumni();
   const { chapterName, setChapterName } = useSettings();
-  const [outreachLog, setOutreachLog] = useLocalStorageState("roster-outreach-log-v1", {});
-  const [myInfo, setMyInfo] = useLocalStorageState("roster-my-info-v1", { name: "", gradYear: "", major: "" });
+  const { myInfo, setMyInfo, outreachLog, setOutreachLog } = useUserData(user?.uid);
 
   const [filters, setFilters] = useState({ query: "", industry: "all", status: "all", sort: "name" });
   const [panelId, setPanelId] = useState(null);
@@ -133,6 +134,24 @@ function AppInner() {
     );
   }
 
+  if (authLoading) {
+    return (
+      <div style={{ padding: 40, maxWidth: 640, margin: "0 auto", color: "#F3ECD9" }}>
+        <p>Loading…</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div style={{ padding: 40, maxWidth: 480, margin: "80px auto", textAlign: "center", color: "#F3ECD9" }}>
+        <h1 style={{ fontFamily: "var(--font-display)" }}>{chapterName || "The Roster"}</h1>
+        <p style={{ marginBottom: 24 }}>Sign in to view the roster and keep your outreach progress saved to your account.</p>
+        <button className="btn btn-brass" onClick={signIn}>Sign in with Google</button>
+      </div>
+    );
+  }
+
   const anyOverlayOpen = Boolean(panelId) || importOpen || myInfoOpen;
 
   return (
@@ -143,6 +162,8 @@ function AppInner() {
         onOpenMyInfo={() => setMyInfoOpen(true)}
         onExport={handleExport}
         onOpenAdd={() => setImportOpen(true)}
+        user={user}
+        onSignOut={signOutUser}
       />
 
       {!myInfo.name && (

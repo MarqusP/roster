@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FIELD_TARGETS, parseCsv, guessHeader, rowsToRecords } from "../utils/csv.js";
+import { FIXED_COLUMNS, parseCsv, matchColumns, rowsToRecords } from "../utils/csv.js";
 import { useToast } from "./ToastProvider.jsx";
 
 const MANUAL_FIELDS = [
@@ -21,13 +21,11 @@ export default function ImportModal({ open, onClose, onImport, onManualAdd, onCl
   const [pasteText, setPasteText] = useState("");
   const [headers, setHeaders] = useState([]);
   const [rows, setRows] = useState([]);
-  const [mapping, setMapping] = useState({});
   const [manual, setManual] = useState(EMPTY_MANUAL);
 
   function resetImportState() {
     setHeaders([]);
     setRows([]);
-    setMapping({});
     setPasteText("");
   }
 
@@ -41,13 +39,12 @@ export default function ImportModal({ open, onClose, onImport, onManualAdd, onCl
       showToast("Couldn't read that as CSV — check the format and try again.", "error");
       return;
     }
-    const guessedMapping = {};
-    FIELD_TARGETS.forEach((f) => {
-      guessedMapping[f.key] = guessHeader(h, f.aliases);
-    });
+    if (!rowsToRecords(r, h).length) {
+      showToast("No \"Name\" column found — make sure your first row has a Name header.", "error");
+      return;
+    }
     setHeaders(h);
     setRows(r);
-    setMapping(guessedMapping);
   }
 
   function handleFile(e) {
@@ -60,11 +57,7 @@ export default function ImportModal({ open, onClose, onImport, onManualAdd, onCl
   }
 
   async function confirmImport() {
-    if (!mapping.name) {
-      showToast("Map at least a Name column before importing.", "error");
-      return;
-    }
-    const records = rowsToRecords(rows, mapping);
+    const records = rowsToRecords(rows, headers);
     const { added, updated } = await onImport(records);
     resetImportState();
     onClose();
@@ -108,6 +101,10 @@ export default function ImportModal({ open, onClose, onImport, onManualAdd, onCl
         </div>
 
         <div className={`tab-panel${tab === "csv" ? " active" : ""}`}>
+          <p className="modal-sub">
+            Your sheet's first row must use these exact column headers (order doesn't matter, extra columns are
+            ignored): <strong>{FIXED_COLUMNS.map((c) => c.header).join(", ")}</strong>. Only Name is required.
+          </p>
           <p className="modal-sub">In Google Sheets: File → Download → Comma-separated values, then upload it here. Or paste the data directly.</p>
           <input type="file" accept=".csv,text/csv" onChange={handleFile} />
           <p className="modal-sub" style={{ margin: "10px 0 4px" }}>— or paste CSV text —</p>
@@ -124,24 +121,9 @@ export default function ImportModal({ open, onClose, onImport, onManualAdd, onCl
           {headers.length > 0 && (
             <div>
               <p className="modal-sub" style={{ marginTop: 16 }}>
-                Found {rows.length} rows, {headers.length} columns. Match your columns below:
+                Found {rows.length} rows. Recognized columns:{" "}
+                {matchColumns(headers).map((c) => c.header).join(", ") || "none"}
               </p>
-              <div className="mapping-grid">
-                {FIELD_TARGETS.map((f) => (
-                  <div key={f.key}>
-                    <label>{f.label}</label>
-                    <select
-                      value={mapping[f.key] || ""}
-                      onChange={(e) => setMapping((m) => ({ ...m, [f.key]: e.target.value }))}
-                    >
-                      <option value="">— none —</option>
-                      {headers.map((h) => (
-                        <option key={h} value={h}>{h}</option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
               <div className="row-actions">
                 <button className="btn btn-brass" onClick={confirmImport}>Import into roster</button>
               </div>

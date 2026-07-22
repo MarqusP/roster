@@ -1,42 +1,52 @@
 import Papa from "papaparse";
 
-export const FIELD_TARGETS = [
-  { key: "name", label: "Name*", aliases: ["name", "full name", "alumni name", "alum name"] },
-  { key: "email", label: "Email", aliases: ["email", "e-mail"] },
-  { key: "company", label: "Company", aliases: ["company", "employer", "organization"] },
-  { key: "title", label: "Title / Role", aliases: ["title", "role", "position", "job title"] },
-  { key: "industry", label: "Industry", aliases: ["industry", "sector", "field"] },
-  { key: "location", label: "Location", aliases: ["location", "city", "state"] },
-  { key: "gradYear", label: "Grad Year", aliases: ["grad", "year", "class"] },
-  { key: "linkedin", label: "LinkedIn", aliases: ["linkedin", "profile"] },
+// Fixed column schema -- CSVs must use these exact header names (case- and
+// spacing-insensitive). No manual column-matching step: a header either
+// matches one of these canonical names or it's ignored.
+export const FIXED_COLUMNS = [
+  { key: "name", header: "Name", required: true },
+  { key: "email", header: "Email" },
+  { key: "company", header: "Company" },
+  { key: "title", header: "Title" },
+  { key: "industry", header: "Industry" },
+  { key: "location", header: "Location" },
+  { key: "gradYear", header: "Grad Year" },
+  { key: "linkedin", header: "LinkedIn" },
 ];
+
+function normalizeHeader(h) {
+  return String(h || "").trim().toLowerCase().replace(/[\s_-]+/g, "");
+}
 
 export function parseCsv(text) {
   const result = Papa.parse(text.trim(), { header: true, skipEmptyLines: true });
   return { headers: result.meta?.fields || [], rows: result.data || [] };
 }
 
-export function guessHeader(headers, aliases) {
-  const lower = headers.map((h) => h.toLowerCase());
-  for (const alias of aliases) {
-    const idx = lower.findIndex((h) => h.includes(alias));
-    if (idx !== -1) return headers[idx];
-  }
-  return "";
+// Which fixed columns were actually found in this CSV's headers.
+export function matchColumns(headers) {
+  return FIXED_COLUMNS.filter((col) => {
+    const target = normalizeHeader(col.header);
+    return headers.some((h) => normalizeHeader(h) === target);
+  });
 }
 
-export function rowsToRecords(rows, mapping) {
+export function rowsToRecords(rows, headers) {
+  const columnByKey = {};
+  FIXED_COLUMNS.forEach((col) => {
+    const target = normalizeHeader(col.header);
+    columnByKey[col.key] = headers.find((h) => normalizeHeader(h) === target) || "";
+  });
+
   return rows
-    .map((row) => ({
-      name: ((mapping.name ? row[mapping.name] : "") || "").trim(),
-      email: ((mapping.email ? row[mapping.email] : "") || "").trim(),
-      company: ((mapping.company ? row[mapping.company] : "") || "").trim(),
-      title: ((mapping.title ? row[mapping.title] : "") || "").trim(),
-      industry: ((mapping.industry ? row[mapping.industry] : "") || "").trim(),
-      location: ((mapping.location ? row[mapping.location] : "") || "").trim(),
-      gradYear: ((mapping.gradYear ? row[mapping.gradYear] : "") || "").trim(),
-      linkedin: ((mapping.linkedin ? row[mapping.linkedin] : "") || "").trim(),
-    }))
+    .map((row) => {
+      const record = {};
+      FIXED_COLUMNS.forEach((col) => {
+        const sourceHeader = columnByKey[col.key];
+        record[col.key] = ((sourceHeader ? row[sourceHeader] : "") || "").trim();
+      });
+      return record;
+    })
     .filter((r) => r.name);
 }
 
