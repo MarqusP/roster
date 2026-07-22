@@ -14,15 +14,15 @@ import { db, firebaseReady } from "../firebase.js";
 const COLLECTION = "alumni";
 const CHUNK_SIZE = 400; // Firestore batches cap at 500 writes
 
-export function useAlumni() {
+export function useAlumni(uid) {
   const [alumni, setAlumni] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!firebaseReady) {
+    if (!firebaseReady || !uid) {
       setLoading(false);
-      return;
+      return undefined;
     }
     const q = query(collection(db, COLLECTION), orderBy("createdAt", "asc"));
     const unsubscribe = onSnapshot(
@@ -35,6 +35,7 @@ export function useAlumni() {
             ...docSnap.data(),
           }))
         );
+        setError(null);
         setLoading(false);
       },
       (err) => {
@@ -43,7 +44,7 @@ export function useAlumni() {
       }
     );
     return unsubscribe;
-  }, []);
+  }, [uid]);
 
   const addAlumnus = useCallback(async (record) => {
     const batch = writeBatch(db);

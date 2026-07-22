@@ -25,8 +25,8 @@ const STATUS_LABELS = {
 function AppInner() {
   const showToast = useToast();
   const { user, authLoading, signIn, signOutUser } = useAuth();
-  const { alumni, loading, error, addAlumnus, importMany, clearAll } = useAlumni();
-  const { chapterName, setChapterName } = useSettings();
+  const { alumni, loading, error, addAlumnus, importMany, clearAll } = useAlumni(user?.uid);
+  const { chapterName, setChapterName } = useSettings(user?.uid);
   const { myInfo, setMyInfo, outreachLog, setOutreachLog } = useUserData(user?.uid);
 
   const [filters, setFilters] = useState({ query: "", industry: "all", status: "all", sort: "name" });
