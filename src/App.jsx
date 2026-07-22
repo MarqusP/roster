@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ToastProvider, useToast } from "./components/ToastProvider.jsx";
+import Landing from "./components/Landing.jsx";
 import Letterhead from "./components/Letterhead.jsx";
 import StatStrip from "./components/StatStrip.jsx";
 import Toolbar from "./components/Toolbar.jsx";
@@ -124,8 +125,8 @@ function AppInner() {
 
   if (!firebaseReady) {
     return (
-      <div style={{ padding: 40, maxWidth: 640, margin: "0 auto", color: "#F3ECD9" }}>
-        <h1 style={{ fontFamily: "var(--font-display)" }}>Firebase isn't configured yet</h1>
+      <div style={{ padding: 40, maxWidth: 640, margin: "0 auto" }}>
+        <h1 style={{ fontSize: 28 }}>Firebase isn't configured yet</h1>
         <p>
           Add your Firebase project credentials to a <code>.env</code> file (see <code>.env.example</code>) and
           restart the dev server to connect the shared roster.
@@ -136,20 +137,14 @@ function AppInner() {
 
   if (authLoading) {
     return (
-      <div style={{ padding: 40, maxWidth: 640, margin: "0 auto", color: "#F3ECD9" }}>
+      <div style={{ padding: 40, maxWidth: 640, margin: "0 auto" }}>
         <p>Loading…</p>
       </div>
     );
   }
 
   if (!user) {
-    return (
-      <div style={{ padding: 40, maxWidth: 480, margin: "80px auto", textAlign: "center", color: "#F3ECD9" }}>
-        <h1 style={{ fontFamily: "var(--font-display)" }}>{chapterName || "The Roster"}</h1>
-        <p style={{ marginBottom: 24 }}>Sign in to view the roster and keep your outreach progress saved to your account.</p>
-        <button className="btn btn-brass" onClick={signIn}>Sign in with Google</button>
-      </div>
-    );
+    return <Landing chapterName={chapterName} onSignIn={signIn} />;
   }
 
   const anyOverlayOpen = Boolean(panelId) || importOpen || myInfoOpen;

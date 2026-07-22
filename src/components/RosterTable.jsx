@@ -33,7 +33,7 @@ export default function RosterTable({ alumni, filtered, statusOf, onOpen, onAddC
         <tbody>
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={5} style={{ textAlign: "center", color: "var(--ink-text-soft)", padding: 30 }}>
+              <td colSpan={5} style={{ textAlign: "center", color: "var(--muted-foreground)", padding: 30 }}>
                 No alumni match these filters.
               </td>
             </tr>
@@ -50,13 +50,13 @@ export default function RosterTable({ alumni, filtered, statusOf, onOpen, onAddC
                 </td>
                 <td data-label="Company & Role">
                   {a.company || "—"}
-                  {a.title ? <span style={{ color: "var(--ink-text-soft)" }}> · {a.title}</span> : null}
+                  {a.title ? <span style={{ color: "var(--muted-foreground)" }}> · {a.title}</span> : null}
                 </td>
                 <td data-label="Industry">
                   {a.industry ? (
                     <span className="industry-pill">{a.industry}</span>
                   ) : (
-                    <span style={{ color: "var(--ink-text-soft)" }}>—</span>
+                    <span style={{ color: "var(--muted-foreground)" }}>—</span>
                   )}
                 </td>
                 <td data-label="Status">

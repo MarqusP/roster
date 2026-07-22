@@ -110,7 +110,7 @@ export default function ImportModal({ open, onClose, onImport, onManualAdd, onCl
           <p className="modal-sub" style={{ margin: "10px 0 4px" }}>— or paste CSV text —</p>
           <textarea
             rows={4}
-            style={{ width: "100%", padding: 8, border: "1px solid var(--parchment-dim)", borderRadius: "var(--radius)" }}
+            style={{ width: "100%", padding: 8, border: "1px solid var(--border)", borderRadius: 6 }}
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
           />
