@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "./ToastProvider.jsx";
 import { auth } from "../firebase.js";
+import { isWithinProfessionalHours, nextProfessionalHoursSlot, toDatetimeLocalValue, pacificWallClockToDate } from "../utils/businessHours.js";
 
 const NOTES_SAVE_DELAY = 800;
 
@@ -22,6 +23,8 @@ export default function ProfilePanel({ alum, entry, myInfo, chapterName, open, o
   const [drafting, setDrafting] = useState(false);
   const [sending, setSending] = useState(false);
   const [attachResume, setAttachResume] = useState(Boolean(myInfo?.resume));
+  const [sendMode, setSendMode] = useState("now");
+  const [scheduledFor, setScheduledFor] = useState("");
   const statusRef = useRef(status);
   const notesTimerRef = useRef(null);
 
@@ -34,6 +37,8 @@ export default function ProfilePanel({ alum, entry, myInfo, chapterName, open, o
     setStatus(entry?.status || "not-contacted");
     setNotes(entry?.notes || "");
     setAttachResume(Boolean(myInfo?.resume));
+    setSendMode("now");
+    setScheduledFor(toDatetimeLocalValue(nextProfessionalHoursSlot(new Date())));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alum?.id]);
 
@@ -139,6 +144,59 @@ export default function ProfilePanel({ alum, entry, myInfo, chapterName, open, o
     }
   }
 
+  async function scheduleEmailSend() {
+    if (!alum.email) {
+      showToast("This alum has no email on file.", "error");
+      return;
+    }
+    if (!subject.trim() || !body.trim()) {
+      showToast("Write a subject and body before scheduling.", "error");
+      return;
+    }
+    const scheduledDate = pacificWallClockToDate(scheduledFor);
+    if (scheduledDate.getTime() <= Date.now()) {
+      showToast("Pick a time in the future.", "error");
+      return;
+    }
+    if (!isWithinProfessionalHours(scheduledDate)) {
+      showToast("Scheduled time must be a weekday between 9am and 5pm Pacific.", "error");
+      return;
+    }
+    setSending(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/schedule-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          to: alum.email,
+          subject,
+          body,
+          replyTo: auth.currentUser?.email || undefined,
+          attachResume: attachResume && Boolean(myInfo?.resume?.data),
+          resumeData: myInfo?.resume?.data,
+          resumeFilename: myInfo?.resume?.filename,
+          scheduledFor: scheduledDate.toISOString(),
+          alumName: alum.name,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        showToast(errData.error || "Couldn't schedule the email — try again.", "error");
+        return;
+      }
+      showToast(`Email scheduled for ${scheduledDate.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.`);
+    } catch (err) {
+      showToast("Couldn't schedule the email — try again.", "error");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function useNextBusinessHours() {
+    setScheduledFor(toDatetimeLocalValue(nextProfessionalHoursSlot(new Date())));
+  }
+
   const history = entry?.history || [];
 
   return (
@@ -203,12 +261,50 @@ export default function ProfilePanel({ alum, entry, myInfo, chapterName, open, o
             Attach my resume ({myInfo.resume.filename})
           </label>
         )}
+
+        <div className="field">
+          <label className="field-label">When to send</label>
+          <div style={{ display: "flex", gap: 14, fontSize: 13 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input type="radio" name="sendMode" checked={sendMode === "now"} onChange={() => setSendMode("now")} />
+              Now
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input type="radio" name="sendMode" checked={sendMode === "schedule"} onChange={() => setSendMode("schedule")} />
+              Schedule for later
+            </label>
+          </div>
+        </div>
+
+        {sendMode === "schedule" && (
+          <div className="field">
+            <label className="field-label">Send time (Pacific, weekdays 9am–5pm)</label>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <input
+                type="datetime-local"
+                value={scheduledFor}
+                onChange={(e) => setScheduledFor(e.target.value)}
+                style={{ flex: 1, minWidth: 200 }}
+              />
+              <button type="button" className="btn btn-sm btn-ghost" onClick={useNextBusinessHours}>
+                Use next business hours
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="row-actions">
           <button className="btn btn-sm btn-ghost" onClick={copyDraft}>Copy</button>
           <button className="btn btn-sm btn-ghost" onClick={openMailto}>Open in email app</button>
-          <button className="btn btn-sm btn-brass" onClick={sendEmail} disabled={sending}>
-            {sending ? "Sending…" : "Send email"}
-          </button>
+          {sendMode === "now" ? (
+            <button className="btn btn-sm btn-brass" onClick={sendEmail} disabled={sending}>
+              {sending ? "Sending…" : "Send email"}
+            </button>
+          ) : (
+            <button className="btn btn-sm btn-brass" onClick={scheduleEmailSend} disabled={sending}>
+              {sending ? "Scheduling…" : "Schedule send"}
+            </button>
+          )}
         </div>
 
         <hr className="divider" />

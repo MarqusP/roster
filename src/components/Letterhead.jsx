@@ -8,6 +8,8 @@ export default function Letterhead({
   onSignOut,
   isAdmin,
   onOpenChapterSettings,
+  scheduledCount,
+  onOpenScheduled,
 }) {
   return (
     <header className="letterhead">
@@ -34,6 +36,7 @@ export default function Letterhead({
         <button className="btn btn-ghost" onClick={onOpenMyInfo}>My Info</button>
         <button className="btn btn-ghost" onClick={onExport}>Export CSV</button>
         <button className="btn btn-brass" onClick={onOpenAdd}>+ Add Alumni</button>
+        <button className="btn btn-ghost" onClick={onOpenScheduled}>Scheduled{scheduledCount ? ` (${scheduledCount})` : ""}</button>
         {isAdmin && (
           <button className="btn btn-ghost" onClick={onOpenChapterSettings}>Chapter Settings</button>
         )}

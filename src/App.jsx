@@ -9,11 +9,13 @@ import ProfilePanel from "./components/ProfilePanel.jsx";
 import ImportModal from "./components/ImportModal.jsx";
 import MyInfoModal from "./components/MyInfoModal.jsx";
 import ChapterSettingsModal from "./components/ChapterSettingsModal.jsx";
+import ScheduledEmailsModal from "./components/ScheduledEmailsModal.jsx";
 import { useAlumni } from "./hooks/useAlumni.js";
 import { useSettings } from "./hooks/useSettings.js";
 import { useAuth } from "./hooks/useAuth.js";
 import { useAdmin } from "./hooks/useAdmin.js";
 import { useUserData } from "./hooks/useUserData.js";
+import { useScheduledEmails } from "./hooks/useScheduledEmails.js";
 import { toCsv } from "./utils/csv.js";
 import { firebaseReady } from "./firebase.js";
 
@@ -32,12 +34,14 @@ function AppInner() {
   const { alumni, loading, error, addAlumnus, importMany, clearAll } = useAlumni(user?.uid);
   const { chapterName, setChapterName } = useSettings(user?.uid);
   const { myInfo, setMyInfo, outreachLog, setOutreachLog } = useUserData(user?.uid);
+  const scheduledEmails = useScheduledEmails(user?.uid);
 
   const [filters, setFilters] = useState({ query: "", industry: "all", status: "all", sort: "name" });
   const [panelId, setPanelId] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [myInfoOpen, setMyInfoOpen] = useState(false);
   const [chapterSettingsOpen, setChapterSettingsOpen] = useState(false);
+  const [scheduledOpen, setScheduledOpen] = useState(false);
 
   useEffect(() => {
     function onKeyDown(e) {
@@ -46,6 +50,7 @@ function AppInner() {
         setImportOpen(false);
         setMyInfoOpen(false);
         setChapterSettingsOpen(false);
+        setScheduledOpen(false);
       }
     }
     document.addEventListener("keydown", onKeyDown);
@@ -157,7 +162,7 @@ function AppInner() {
     return <Landing chapterName={chapterName} onSignIn={signIn} />;
   }
 
-  const anyOverlayOpen = Boolean(panelId) || importOpen || myInfoOpen || chapterSettingsOpen;
+  const anyOverlayOpen = Boolean(panelId) || importOpen || myInfoOpen || chapterSettingsOpen || scheduledOpen;
 
   return (
     <>
@@ -171,6 +176,8 @@ function AppInner() {
         onSignOut={signOutUser}
         isAdmin={isAdmin}
         onOpenChapterSettings={() => setChapterSettingsOpen(true)}
+        scheduledCount={scheduledEmails.length}
+        onOpenScheduled={() => setScheduledOpen(true)}
       />
 
       {!myInfo.name && (
@@ -205,6 +212,7 @@ function AppInner() {
           setImportOpen(false);
           setMyInfoOpen(false);
           setChapterSettingsOpen(false);
+          setScheduledOpen(false);
         }}
       />
 
@@ -234,6 +242,12 @@ function AppInner() {
           onClearAll={clearAll}
         />
       )}
+
+      <ScheduledEmailsModal
+        open={scheduledOpen}
+        onClose={() => setScheduledOpen(false)}
+        scheduled={scheduledEmails}
+      />
     </>
   );
 }
