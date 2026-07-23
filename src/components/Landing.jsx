@@ -16,6 +16,19 @@ const FEATURES = [
   },
 ];
 
+const HOW_IT_WORKS = [
+  {
+    num: "01",
+    title: "Add your own info",
+    body: "Share your name, grad year, and major once in My Info — every draft is written to sound like it's genuinely coming from you, not a template.",
+  },
+  {
+    num: "02",
+    title: "Tell it what you're after",
+    body: "Pick a purpose — an informational interview, a referral, or just staying in touch — and add a note on what you'd like to learn or connect on. The AI turns that into a personalized, ready-to-edit draft.",
+  },
+];
+
 export default function Landing({ chapterName, onSignIn }) {
   return (
     <div className="landing">
@@ -66,6 +79,30 @@ export default function Landing({ chapterName, onSignIn }) {
           </p>
           <div className="feature-grid">
             {FEATURES.map((f) => (
+              <div className="feature-card" key={f.num}>
+                <span className="feature-num">{f.num}</span>
+                <h3>{f.title}</h3>
+                <p>{f.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <hr className="landing-rule" />
+
+      <section className="landing-features">
+        <div className="landing-container">
+          <div className="section-label">
+            <span>How It Works</span>
+          </div>
+          <h2 className="landing-section-title">Make every email personal</h2>
+          <p className="landing-section-sub">
+            The draft assistant writes from your perspective, toward whatever you're actually hoping to get
+            out of the conversation.
+          </p>
+          <div className="feature-grid how-it-works-grid">
+            {HOW_IT_WORKS.map((f) => (
               <div className="feature-card" key={f.num}>
                 <span className="feature-num">{f.num}</span>
                 <h3>{f.title}</h3>
