@@ -7,14 +7,16 @@ assistance, and keep private notes on who they've reached out to.
 - **Shared roster** — one alumni directory, synced live across every member via Firebase.
 - **Google sign-in required** — members sign in with Google before using the app.
 - **Import from your Google Sheet** — upload a CSV export (or paste it in). Your sheet's header row must use the fixed column names (Name, Email, Company, Title, Industry, Location, Grad Year, LinkedIn) — see [`src/utils/csv.js`](./src/utils/csv.js).
-- **AI-drafted emails** — pick a purpose (informational interview, referral, etc.) and get a personalized draft to edit and send from your own email client.
+- **AI-drafted emails** — pick a purpose (informational interview, referral, etc.), optionally add what you'd like to learn or connect on, and get a personalized draft. If you've uploaded a resume, the AI can reference specific details from it.
+- **Resume upload** — each member can attach a PDF resume (under 600KB) in My Info, stored alongside their profile in Firestore. It's used as context for AI drafts and can be attached as a real file when sending.
+- **Real email sending with attachments** — "Send email" delivers the message (and resume, if attached) directly via the server, since a `mailto:` link can't carry attachments. "Open in email app" remains as a no-setup fallback.
 - **Personal outreach tracking** — each member's own "contacted / replied / meeting scheduled" notes and profile info are tied to their Google account and synced via Firestore, so they follow that member across devices (not shared with other members).
 
 ## Tech stack
 
 - [Vite](https://vitejs.dev/) + [React](https://react.dev/)
-- [Firebase Firestore](https://firebase.google.com/docs/firestore) — the shared roster database
-- A single [Vercel Serverless Function](https://vercel.com/docs/functions) (`api/draft-email.js`) that calls the Anthropic API to draft emails, keeping your API key private
+- [Firebase Firestore](https://firebase.google.com/docs/firestore) — the shared roster database (resumes are stored inline here too, as base64 — no Firebase Storage / billing plan needed)
+- [Vercel Serverless Functions](https://vercel.com/docs/functions) — `api/draft-email.js` (Anthropic API) and `api/send-email.js` (Resend API), keeping both API keys private
 
 Nothing else is required — no separate backend server to run.
 
@@ -51,7 +53,16 @@ This feature calls the Anthropic API from a server function so your API key is n
 2. When you deploy to Vercel (below), add it as an environment variable named `ANTHROPIC_API_KEY` — **do not** put it in `.env` / commit it, and don't prefix it with `VITE_`.
 3. Locally, `vercel dev` will pick up a `.env` value for it too if you want to test it before deploying; without it, the "Draft with AI" button just shows a friendly error and you can write the email yourself in the same box.
 
-## 3. Publish it
+## 3. Sending email with attachments (optional)
+
+"Send email" delivers the message server-side via [Resend](https://resend.com) so a resume can be attached — a `mailto:` link has no way to carry a file. Without this set up, members can still use "Open in email app" (opens their own mail client, no attachment).
+
+1. Create a free [Resend](https://resend.com) account and grab an API key.
+2. Add it as a Vercel environment variable named `RESEND_API_KEY` (server-only — never `VITE_`-prefixed).
+3. By default, emails send from `onboarding@resend.dev` (Resend's shared test domain — works immediately, no setup, sends to any recipient). For your chapter's own sending address, [verify a domain in Resend](https://resend.com/docs/dashboard/domains/introduction) and set `RESEND_FROM_EMAIL` to an address on that domain (e.g. `roster@yourchapterdomain.org`).
+4. Replies go to the sending member's own email automatically (set as `Reply-To` on each send), regardless of which `from` address is used.
+
+## 4. Publish it
 
 ### Push to your own GitHub repo
 
@@ -71,10 +82,13 @@ git push -u origin main
 3. Before deploying, add **Environment Variables** in the Vercel project settings:
    - `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` (same values as your `.env`)
    - `ANTHROPIC_API_KEY` (only if you want AI drafting live)
+   - `RESEND_API_KEY` and, optionally, `RESEND_FROM_EMAIL` (only if you want "Send email" with attachments live)
 4. Deploy. Share the resulting `.vercel.app` link with your chapter.
+5. Add the deployed domain under Firebase **Authentication → Settings → Authorized domains** (Google sign-in won't work there otherwise).
 
 ## Notes & limitations
 
-- The roster is shared and live for everyone; each member's own "My Info" and outreach status/notes stay local to their browser (clearing browser data clears that member's tracking, not the shared roster).
+- The roster is shared and live for everyone; each member's own "My Info" and outreach status/notes are tied to their Google account via Firestore (not shared with other members, and not lost by clearing browser data).
 - Firestore's free tier comfortably covers a chapter-sized roster and normal usage.
-- The Firestore rules ship open/no-auth for simplicity — anyone with your deployed link and Firebase project can read and write the roster. Add Firebase Auth later if you need to restrict who can edit it.
+- Resumes are capped at 600KB and stored as base64 text inside each member's Firestore doc (no Firebase Storage / billing plan required) — covers typical simple resume PDFs, but a heavily designed or image-based resume may not fit.
+- Reading, adding, and editing alumni records requires being signed in; permanently clearing the whole roster additionally requires being listed in the `admins` Firestore collection (see [`firestore.rules`](./firestore.rules) — admins are added manually via the Firebase console, there's no in-app way to grant it).

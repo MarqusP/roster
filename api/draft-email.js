@@ -2,42 +2,20 @@
 // Proxies a request to the Anthropic API to draft a personalized outreach
 // email, keeping the Anthropic API key on the server (never sent to the browser).
 
-import { jwtVerify, createRemoteJWKSet } from "jose";
-
-const PROJECT_ID = process.env.VITE_FIREBASE_PROJECT_ID;
-const JWKS = createRemoteJWKSet(
-  new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com")
-);
-
-// Verifies the caller is a real signed-in Firebase user for this project --
-// checked against Google's public keys, so no service-account secret is needed.
-async function verifyFirebaseToken(authHeader) {
-  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
-  const token = authHeader.slice(7);
-  try {
-    const { payload } = await jwtVerify(token, JWKS, {
-      issuer: `https://securetoken.google.com/${PROJECT_ID}`,
-      audience: PROJECT_ID,
-    });
-    return payload.sub || null;
-  } catch {
-    return null;
-  }
-}
+import { verifyFirebaseToken, makeRateLimiter } from "./_lib/verify.js";
 
 const RATE_LIMIT_MAX_PER_HOUR = 20;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
-// In-memory, per-instance limiter -- resets on cold start and isn't shared
-// across concurrent Vercel instances. That's fine here: the goal is blunting
-// casual abuse of a paid API, not perfect global enforcement.
-const requestLog = new Map(); // uid -> timestamps[]
+const isRateLimited = makeRateLimiter(RATE_LIMIT_MAX_PER_HOUR, 60 * 60 * 1000);
 
-function isRateLimited(uid) {
-  const now = Date.now();
-  const recent = (requestLog.get(uid) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-  recent.push(now);
-  requestLog.set(uid, recent);
-  return recent.length > RATE_LIMIT_MAX_PER_HOUR;
+function resumeAsDocumentBlock(resume) {
+  if (!resume?.data) return null;
+  return {
+    type: "document",
+    source: { type: "base64", media_type: "application/pdf", data: resume.data },
+    // The same resume is reused across many drafts for this user -- cache it
+    // so repeat requests don't re-process the PDF at full price.
+    cache_control: { type: "ephemeral" },
+  };
 }
 
 export default async function handler(req, res) {
@@ -77,17 +55,24 @@ export default async function handler(req, res) {
   if (myInfo?.gradYear) fromBits.push(`class of ${myInfo.gradYear}`);
   if (myInfo?.major) fromBits.push(`studying ${myInfo.major}`);
 
+  const resumeBlock = resumeAsDocumentBlock(myInfo?.resume);
+
   const prompt = [
     "Write a short, warm, professional networking email.",
     `From: ${myInfo?.name || "a chapter member"}${fromBits.length ? ", " + fromBits.join(", ") : ""}, a current member of ${chapterName || "the chapter"}.`,
     `To: ${alum.name}, who works as ${alum.title || "a professional"} at ${alum.company || "their company"}${alum.industry ? " in " + alum.industry : ""}.`,
     `Purpose: requesting ${purposeText}.`,
     context ? `Additional context from the sender: ${context}` : "",
+    resumeBlock
+      ? "The sender's resume is attached. Where it's genuinely relevant, you may reference a specific, concrete detail from it (a role, skill, or project) to make the ask more credible -- don't just summarize the resume."
+      : "",
     "Requirements: 120-180 words, genuine and specific rather than generic, naturally mention the shared fraternity/chapter connection, reference something concrete about the recipient's role or industry, include exactly one clear low-pressure ask, and sign off with the sender's first name only (no bracket placeholders).",
     'Respond with ONLY a JSON object, no markdown fences, no commentary, in exactly this shape: {"subject": "...", "body": "..."}',
   ]
     .filter(Boolean)
     .join("\n");
+
+  const userContent = resumeBlock ? [resumeBlock, { type: "text", text: prompt }] : prompt;
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -100,7 +85,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "claude-sonnet-5",
         max_tokens: 1000,
-        messages: [{ role: "user", content: prompt }],
+        messages: [{ role: "user", content: userContent }],
       }),
     });
 

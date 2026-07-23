@@ -20,6 +20,8 @@ export default function ProfilePanel({ alum, entry, myInfo, chapterName, open, o
   const [status, setStatus] = useState("not-contacted");
   const [notes, setNotes] = useState("");
   const [drafting, setDrafting] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [attachResume, setAttachResume] = useState(Boolean(myInfo?.resume));
   const statusRef = useRef(status);
   const notesTimerRef = useRef(null);
 
@@ -31,6 +33,7 @@ export default function ProfilePanel({ alum, entry, myInfo, chapterName, open, o
     setBody("");
     setStatus(entry?.status || "not-contacted");
     setNotes(entry?.notes || "");
+    setAttachResume(Boolean(myInfo?.resume));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alum?.id]);
 
@@ -98,6 +101,44 @@ export default function ProfilePanel({ alum, entry, myInfo, chapterName, open, o
     window.location.href = href;
   }
 
+  async function sendEmail() {
+    if (!alum.email) {
+      showToast("This alum has no email on file.", "error");
+      return;
+    }
+    if (!subject.trim() || !body.trim()) {
+      showToast("Write a subject and body before sending.", "error");
+      return;
+    }
+    setSending(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          to: alum.email,
+          subject,
+          body,
+          replyTo: auth.currentUser?.email || undefined,
+          attachResume: attachResume && Boolean(myInfo?.resume?.data),
+          resumeData: myInfo?.resume?.data,
+          resumeFilename: myInfo?.resume?.filename,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        showToast(errData.error || "Couldn't send the email — try again.", "error");
+        return;
+      }
+      showToast(attachResume && myInfo?.resume ? "Email sent with your resume attached." : "Email sent.");
+    } catch (err) {
+      showToast("Couldn't send the email — try again.", "error");
+    } finally {
+      setSending(false);
+    }
+  }
+
   const history = entry?.history || [];
 
   return (
@@ -156,9 +197,18 @@ export default function ProfilePanel({ alum, entry, myInfo, chapterName, open, o
             placeholder="Draft will appear here — edit freely before sending."
           />
         </div>
+        {myInfo?.resume && (
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, margin: "10px 0" }}>
+            <input type="checkbox" checked={attachResume} onChange={(e) => setAttachResume(e.target.checked)} />
+            Attach my resume ({myInfo.resume.filename})
+          </label>
+        )}
         <div className="row-actions">
           <button className="btn btn-sm btn-ghost" onClick={copyDraft}>Copy</button>
-          <button className="btn btn-sm btn-brass" onClick={openMailto}>Open in email app</button>
+          <button className="btn btn-sm btn-ghost" onClick={openMailto}>Open in email app</button>
+          <button className="btn btn-sm btn-brass" onClick={sendEmail} disabled={sending}>
+            {sending ? "Sending…" : "Send email"}
+          </button>
         </div>
 
         <hr className="divider" />
