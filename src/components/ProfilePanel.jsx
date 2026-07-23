@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useToast } from "./ToastProvider.jsx";
+import { auth } from "../firebase.js";
+
+const NOTES_SAVE_DELAY = 800;
 
 const STATUS_LABELS = {
   "not-contacted": "Not Contacted",
@@ -17,6 +20,8 @@ export default function ProfilePanel({ alum, entry, myInfo, chapterName, open, o
   const [status, setStatus] = useState("not-contacted");
   const [notes, setNotes] = useState("");
   const [drafting, setDrafting] = useState(false);
+  const statusRef = useRef(status);
+  const notesTimerRef = useRef(null);
 
   useEffect(() => {
     if (!alum) return;
@@ -29,19 +34,39 @@ export default function ProfilePanel({ alum, entry, myInfo, chapterName, open, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alum?.id]);
 
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
   if (!alum) return null;
+
+  function handleStatusChange(newStatus) {
+    setStatus(newStatus);
+    onSaveStatus(alum.id, newStatus, notes);
+    showToast("Status updated.");
+  }
+
+  function handleNotesChange(newNotes) {
+    setNotes(newNotes);
+    if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
+    notesTimerRef.current = setTimeout(() => {
+      onSaveStatus(alum.id, statusRef.current, newNotes);
+    }, NOTES_SAVE_DELAY);
+  }
 
   async function draftEmail() {
     setDrafting(true);
     try {
+      const token = await auth.currentUser?.getIdToken();
       const res = await fetch("/api/draft-email", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ alum, purpose, context, myInfo, chapterName }),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "Request failed");
+        showToast(errData.error || "Couldn't reach the draft assistant — write your own below, or try again.", "error");
+        return;
       }
       const data = await res.json();
       setSubject(data.subject || "");
@@ -140,7 +165,7 @@ export default function ProfilePanel({ alum, entry, myInfo, chapterName, open, o
         <h3>Outreach status</h3>
         <div className="field">
           <label className="field-label">Status</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <select value={status} onChange={(e) => handleStatusChange(e.target.value)}>
             <option value="not-contacted">Not Contacted</option>
             <option value="contacted">Contacted</option>
             <option value="replied">Replied</option>
@@ -148,16 +173,13 @@ export default function ProfilePanel({ alum, entry, myInfo, chapterName, open, o
           </select>
         </div>
         <div className="field">
-          <label className="field-label">Notes</label>
+          <label className="field-label">Notes — saves automatically</label>
           <textarea
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e) => handleNotesChange(e.target.value)}
             placeholder="What did you talk about? Any follow-up needed?"
           />
         </div>
-        <button className="btn btn-sm btn-brass" onClick={() => onSaveStatus(alum.id, status, notes)}>
-          Save status
-        </button>
         <ul className="history-list">
           {history.slice().reverse().slice(0, 6).map((h, i) => (
             <li key={i}>{h.date} — {STATUS_LABELS[h.status]} (by {h.by || "—"})</li>

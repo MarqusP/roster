@@ -1,13 +1,25 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Shared roster + chapter settings: readable/writable by any signed-in
-    // member (Google sign-in required by the app).
+    // Shared roster: any signed-in member can read, add, and edit entries.
+    // Deleting entries (including the chapter admin's bulk "clear all roster"
+    // action) is destructive and shared, so it's restricted to admins --
+    // members listed in /admins -- rather than any signed-in user.
     match /alumni/{docId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null;
+      allow delete: if request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
     match /settings/{docId} {
       allow read, write: if request.auth != null;
+    }
+    // Admin roster -- doc ID is the member's uid. Membership is granted
+    // manually (Firebase console), never by clients: a signed-in member may
+    // only read their own doc (to check "am I an admin?"), and no client may
+    // write to this collection at all.
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
     }
     // Each member's own outreach progress ("My Info" + status/notes/history)
     // -- only that member can read or write their own doc.

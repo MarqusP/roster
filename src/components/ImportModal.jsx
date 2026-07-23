@@ -15,7 +15,7 @@ const MANUAL_FIELDS = [
 
 const EMPTY_MANUAL = { name: "", email: "", company: "", title: "", industry: "", location: "", gradYear: "", linkedin: "" };
 
-export default function ImportModal({ open, onClose, onImport, onManualAdd, onClearAll }) {
+export default function ImportModal({ open, onClose, onImport, onManualAdd }) {
   const showToast = useToast();
   const [tab, setTab] = useState("csv");
   const [pasteText, setPasteText] = useState("");
@@ -74,13 +74,6 @@ export default function ImportModal({ open, onClose, onImport, onManualAdd, onCl
     setManual(EMPTY_MANUAL);
     onClose();
     showToast(`${name} added to the roster.`);
-  }
-
-  async function handleClearAll() {
-    if (!window.confirm("This permanently deletes the shared roster for everyone using this tool. Continue?")) return;
-    await onClearAll();
-    onClose();
-    showToast("Roster cleared.");
   }
 
   function close() {
@@ -143,11 +136,6 @@ export default function ImportModal({ open, onClose, onImport, onManualAdd, onCl
             </div>
           ))}
           <button className="btn btn-brass" onClick={submitManual}>Add to roster</button>
-        </div>
-
-        <div className="danger-zone">
-          <p>Clear the entire shared roster for everyone. This can't be undone.</p>
-          <button className="btn btn-sm btn-danger" onClick={handleClearAll}>Clear all data</button>
         </div>
       </div>
     </div>

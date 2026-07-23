@@ -340,6 +340,11 @@ h1, h2, h3 { font-family: var(--font-display); margin: 0; font-weight: 400; }
 .toolbar input[type="text"]:hover, .toolbar select:hover { border-color: var(--border-hover); }
 .toolbar input[type="text"]:focus, .toolbar select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--ring), 0 0 0 4px rgba(184, 134, 11, 0.15); }
 .toolbar input[type="text"] { flex: 1; min-width: 180px; }
+.toolbar-search-row { display: flex; gap: 10px; align-items: center; flex: 1; min-width: 180px; }
+.toolbar-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.filter-toggle { display: none; }
+.industry-filter-group { display: flex; align-items: center; gap: 8px; }
+.industry-filter-note { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted-foreground); white-space: nowrap; }
 
 /* ---------- Main / roster ---------- */
 main { padding: 24px 32px 60px; }
@@ -484,6 +489,14 @@ label.field-label { display: block; font-family: var(--font-mono); font-size: 10
 /* ---------- Responsive table ---------- */
 @media (max-width: 720px) {
   .letterhead, .toolbar, main { padding-left: 16px; padding-right: 16px; }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .toolbar-search-row { width: 100%; }
+  .filter-toggle { display: inline-flex; white-space: nowrap; }
+  .toolbar-filters { display: none; flex-direction: column; width: 100%; }
+  .toolbar-filters.open { display: flex; }
+  .toolbar-filters select { width: 100%; }
+  .industry-filter-group { flex-direction: column; align-items: stretch; gap: 4px; }
+  .industry-filter-note { white-space: normal; }
   thead { position: absolute; left: -9999px; top: -9999px; }
   tbody tr { display: block; border-bottom: 1px solid var(--border); padding: 12px 4px; }
   td { display: block; text-align: left; padding: 4px 8px; }

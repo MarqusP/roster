@@ -8,9 +8,11 @@ import RosterTable from "./components/RosterTable.jsx";
 import ProfilePanel from "./components/ProfilePanel.jsx";
 import ImportModal from "./components/ImportModal.jsx";
 import MyInfoModal from "./components/MyInfoModal.jsx";
+import ChapterSettingsModal from "./components/ChapterSettingsModal.jsx";
 import { useAlumni } from "./hooks/useAlumni.js";
 import { useSettings } from "./hooks/useSettings.js";
 import { useAuth } from "./hooks/useAuth.js";
+import { useAdmin } from "./hooks/useAdmin.js";
 import { useUserData } from "./hooks/useUserData.js";
 import { toCsv } from "./utils/csv.js";
 import { firebaseReady } from "./firebase.js";
@@ -26,6 +28,7 @@ const STATUS_LABELS = {
 function AppInner() {
   const showToast = useToast();
   const { user, authLoading, signIn, signOutUser } = useAuth();
+  const isAdmin = useAdmin(user?.uid);
   const { alumni, loading, error, addAlumnus, importMany, clearAll } = useAlumni(user?.uid);
   const { chapterName, setChapterName } = useSettings(user?.uid);
   const { myInfo, setMyInfo, outreachLog, setOutreachLog } = useUserData(user?.uid);
@@ -34,6 +37,7 @@ function AppInner() {
   const [panelId, setPanelId] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [myInfoOpen, setMyInfoOpen] = useState(false);
+  const [chapterSettingsOpen, setChapterSettingsOpen] = useState(false);
 
   useEffect(() => {
     function onKeyDown(e) {
@@ -41,6 +45,7 @@ function AppInner() {
         setPanelId(null);
         setImportOpen(false);
         setMyInfoOpen(false);
+        setChapterSettingsOpen(false);
       }
     }
     document.addEventListener("keydown", onKeyDown);
@@ -55,6 +60,11 @@ function AppInner() {
     () => Array.from(new Set(alumni.map((a) => (a.industry || "").trim()).filter(Boolean))).sort(),
     [alumni]
   );
+
+  const industryFillRate = useMemo(() => {
+    if (alumni.length === 0) return 1;
+    return alumni.filter((a) => (a.industry || "").trim()).length / alumni.length;
+  }, [alumni]);
 
   const filtered = useMemo(() => {
     let list = alumni.slice();
@@ -147,7 +157,7 @@ function AppInner() {
     return <Landing chapterName={chapterName} onSignIn={signIn} />;
   }
 
-  const anyOverlayOpen = Boolean(panelId) || importOpen || myInfoOpen;
+  const anyOverlayOpen = Boolean(panelId) || importOpen || myInfoOpen || chapterSettingsOpen;
 
   return (
     <>
@@ -159,6 +169,8 @@ function AppInner() {
         onOpenAdd={() => setImportOpen(true)}
         user={user}
         onSignOut={signOutUser}
+        isAdmin={isAdmin}
+        onOpenChapterSettings={() => setChapterSettingsOpen(true)}
       />
 
       {!myInfo.name && (
@@ -169,7 +181,7 @@ function AppInner() {
       )}
 
       <StatStrip alumni={alumni} statusOf={statusOf} />
-      <Toolbar filters={filters} onChange={setFilters} industries={industries} />
+      <Toolbar filters={filters} onChange={setFilters} industries={industries} industryFillRate={industryFillRate} />
 
       <main>
         {loading ? (
@@ -192,6 +204,7 @@ function AppInner() {
           setPanelId(null);
           setImportOpen(false);
           setMyInfoOpen(false);
+          setChapterSettingsOpen(false);
         }}
       />
 
@@ -210,10 +223,17 @@ function AppInner() {
         onClose={() => setImportOpen(false)}
         onImport={importMany}
         onManualAdd={addAlumnus}
-        onClearAll={clearAll}
       />
 
       <MyInfoModal open={myInfoOpen} myInfo={myInfo} onSave={setMyInfo} onClose={() => setMyInfoOpen(false)} />
+
+      {isAdmin && (
+        <ChapterSettingsModal
+          open={chapterSettingsOpen}
+          onClose={() => setChapterSettingsOpen(false)}
+          onClearAll={clearAll}
+        />
+      )}
     </>
   );
 }

@@ -2,10 +2,57 @@
 // Proxies a request to the Anthropic API to draft a personalized outreach
 // email, keeping the Anthropic API key on the server (never sent to the browser).
 
+import { jwtVerify, createRemoteJWKSet } from "jose";
+
+const PROJECT_ID = process.env.VITE_FIREBASE_PROJECT_ID;
+const JWKS = createRemoteJWKSet(
+  new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com")
+);
+
+// Verifies the caller is a real signed-in Firebase user for this project --
+// checked against Google's public keys, so no service-account secret is needed.
+async function verifyFirebaseToken(authHeader) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  const token = authHeader.slice(7);
+  try {
+    const { payload } = await jwtVerify(token, JWKS, {
+      issuer: `https://securetoken.google.com/${PROJECT_ID}`,
+      audience: PROJECT_ID,
+    });
+    return payload.sub || null;
+  } catch {
+    return null;
+  }
+}
+
+const RATE_LIMIT_MAX_PER_HOUR = 20;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+// In-memory, per-instance limiter -- resets on cold start and isn't shared
+// across concurrent Vercel instances. That's fine here: the goal is blunting
+// casual abuse of a paid API, not perfect global enforcement.
+const requestLog = new Map(); // uid -> timestamps[]
+
+function isRateLimited(uid) {
+  const now = Date.now();
+  const recent = (requestLog.get(uid) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  recent.push(now);
+  requestLog.set(uid, recent);
+  return recent.length > RATE_LIMIT_MAX_PER_HOUR;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const uid = await verifyFirebaseToken(req.headers.authorization);
+  if (!uid) {
+    return res.status(401).json({ error: "Sign in to use the draft assistant." });
+  }
+
+  if (isRateLimited(uid)) {
+    return res.status(429).json({ error: "You've hit the draft limit for this hour — try again later." });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

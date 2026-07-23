@@ -20,7 +20,7 @@ export default function Landing({ chapterName, onSignIn }) {
   return (
     <div className="landing">
       <section className="landing-hero">
-        <p className="landing-eyebrow">{chapterName || "Alpha Kappa Psi"} · Alumni Network</p>
+        <p className="landing-eyebrow">{chapterName || "Alpha Kappa Psi — Rho Chapter"} · Alumni Network</p>
         <h1 className="landing-headline">
           The <em>Roster</em>
         </h1>
@@ -78,7 +78,7 @@ export default function Landing({ chapterName, onSignIn }) {
 
       <hr className="landing-rule" />
 
-      <footer className="landing-footer">{chapterName || "Alpha Kappa Psi"} · The Roster</footer>
+      <footer className="landing-footer">{chapterName || "Alpha Kappa Psi — Rho Chapter"} · The Roster</footer>
     </div>
   );
 }
