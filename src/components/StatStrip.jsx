@@ -12,7 +12,7 @@ export default function StatStrip({ alumni, statusOf }) {
     <section className="stat-strip">
       <div className="stat-box">
         <span className="stat-num">{alumni.length}</span>
-        <span className="stat-label">Total Alumni</span>
+        <span className="stat-label">Total Roster</span>
       </div>
       <div className="stat-box">
         <span className="stat-num">{counts.none}</span>

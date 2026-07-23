@@ -2,7 +2,7 @@ const FEATURES = [
   {
     num: "01",
     title: "Shared Roster",
-    body: "One living directory of chapter alumni — imported once, visible to every member, always current.",
+    body: "One living directory the whole chapter shares. Add a recruiter or industry contact you know, and every member benefits from it — not just you. Help each other out.",
   },
   {
     num: "02",
@@ -33,14 +33,14 @@ export default function Landing({ chapterName, onSignIn }) {
   return (
     <div className="landing">
       <section className="landing-hero">
-        <p className="landing-eyebrow">{chapterName || "Alpha Kappa Psi — Rho Chapter"} · Alumni Network</p>
+        <p className="landing-eyebrow">{chapterName || "Alpha Kappa Psi — Rho Chapter"} · Alumni &amp; Industry Network</p>
         <h1 className="landing-headline">
           The <em>Roster</em>
         </h1>
         <div className="hero-rule" />
         <p className="landing-sub">
-          A shared alumni directory and outreach log for the chapter. Sign in to browse the roster,
-          draft outreach emails, and keep your own progress saved to your account.
+          A shared directory of alumni, recruiters, and industry contacts, plus an outreach log for the chapter.
+          Sign in to browse the roster, draft outreach emails, and keep your own progress saved to your account.
         </p>
         <div className="landing-cta-row">
           <button className="btn btn-brass landing-cta" onClick={onSignIn}>
@@ -54,7 +54,7 @@ export default function Landing({ chapterName, onSignIn }) {
       <section className="landing-stats">
         <div className="landing-stat">
           <span className="landing-stat-num">500+</span>
-          <span className="landing-stat-label">Alumni on Record</span>
+          <span className="landing-stat-label">Contacts on Record</span>
         </div>
         <div className="landing-stat">
           <span className="landing-stat-num">40</span>
@@ -75,7 +75,7 @@ export default function Landing({ chapterName, onSignIn }) {
           </div>
           <h2 className="landing-section-title">Built for staying in touch</h2>
           <p className="landing-section-sub">
-            Everything the chapter needs to keep its alumni network warm, in one shared place.
+            Everything the chapter needs to keep its alumni and industry network warm, in one shared place.
           </p>
           <div className="feature-grid">
             {FEATURES.map((f) => (

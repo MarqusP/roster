@@ -35,7 +35,7 @@ export default function Letterhead({
       <div className="letterhead-actions">
         <button className="btn btn-ghost" onClick={onOpenMyInfo}>My Info</button>
         <button className="btn btn-ghost" onClick={onExport}>Export CSV</button>
-        <button className="btn btn-brass" onClick={onOpenAdd}>+ Add Alumni</button>
+        <button className="btn btn-brass" onClick={onOpenAdd}>+ Add</button>
         <button className="btn btn-ghost" onClick={onOpenScheduled}>Scheduled{scheduledCount ? ` (${scheduledCount})` : ""}</button>
         {isAdmin && (
           <button className="btn btn-ghost" onClick={onOpenChapterSettings}>Chapter Settings</button>

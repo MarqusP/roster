@@ -12,7 +12,27 @@ export const FIXED_COLUMNS = [
   { key: "location", header: "Location" },
   { key: "gradYear", header: "Grad Year" },
   { key: "linkedin", header: "LinkedIn" },
+  { key: "contactType", header: "Type" },
 ];
+
+// The roster isn't alumni-only -- members can add recruiters and other
+// industry contacts too. Every record has one of these types; missing/legacy
+// records with no contactType are treated as "alumni" (see normalizeContactType).
+export const CONTACT_TYPES = [
+  { key: "alumni", label: "Alumni" },
+  { key: "recruiter", label: "Recruiter" },
+  { key: "contact", label: "Other Contact" },
+];
+
+export function normalizeContactType(value) {
+  const v = String(value || "").trim().toLowerCase();
+  const match = CONTACT_TYPES.find((t) => t.key === v || t.label.toLowerCase() === v);
+  return match ? match.key : "alumni";
+}
+
+export function contactTypeLabel(key) {
+  return CONTACT_TYPES.find((t) => t.key === (key || "alumni"))?.label || "Alumni";
+}
 
 function normalizeHeader(h) {
   return String(h || "").trim().toLowerCase().replace(/[\s_-]+/g, "");
@@ -43,7 +63,8 @@ export function rowsToRecords(rows, headers) {
       const record = {};
       FIXED_COLUMNS.forEach((col) => {
         const sourceHeader = columnByKey[col.key];
-        record[col.key] = ((sourceHeader ? row[sourceHeader] : "") || "").trim();
+        const raw = ((sourceHeader ? row[sourceHeader] : "") || "").trim();
+        record[col.key] = col.key === "contactType" ? normalizeContactType(raw) : raw;
       });
       return record;
     })
@@ -59,7 +80,7 @@ function escapeCsvValue(value) {
 export function toCsv(alumni, outreachLog, statusLabel) {
   const headers = [
     "Name", "Email", "Company", "Title", "Industry", "Location",
-    "Grad Year", "LinkedIn", "Status", "Notes", "Last Contacted",
+    "Grad Year", "LinkedIn", "Type", "Status", "Notes", "Last Contacted",
   ];
   const lines = [headers.join(",")];
   alumni.forEach((a) => {
@@ -67,7 +88,7 @@ export function toCsv(alumni, outreachLog, statusLabel) {
     lines.push(
       [
         a.name, a.email, a.company, a.title, a.industry, a.location,
-        a.gradYear, a.linkedin, statusLabel(entry.status || "not-contacted"),
+        a.gradYear, a.linkedin, contactTypeLabel(a.contactType), statusLabel(entry.status || "not-contacted"),
         entry.notes || "", entry.lastContactedDate || "",
       ]
         .map(escapeCsvValue)

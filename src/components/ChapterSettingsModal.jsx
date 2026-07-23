@@ -35,7 +35,7 @@ export default function ChapterSettingsModal({ open, onClose, onClearAll }) {
 
         <div className="danger-zone">
           <p>
-            Permanently deletes every alumni record for everyone using this tool. This cannot be undone
+            Permanently deletes every roster record (alumni, recruiters, and other contacts) for everyone using this tool. This cannot be undone
             — chapter members will need to re-import the roster from scratch.
           </p>
           <div className="field">

@@ -11,7 +11,8 @@ security model, and the full environment variable reference — see
 
 - **Shared roster** — one alumni directory, synced live across every member via Firebase.
 - **Google sign-in required** — members sign in with Google before using the app.
-- **Import from your Google Sheet** — upload a CSV export (or paste it in). Your sheet's header row must use the fixed column names (Name, Email, Company, Title, Industry, Location, Grad Year, LinkedIn) — see [`src/utils/csv.js`](./src/utils/csv.js).
+- **Not just alumni** — the roster also holds recruiters and other industry contacts worth staying in touch with. Every entry has a Type (Alumni / Recruiter / Other Contact), shown as a badge and filterable in the toolbar.
+- **Import from your Google Sheet** — upload a CSV export (or paste it in). Your sheet's header row must use the fixed column names (Name, Email, Company, Title, Industry, Location, Grad Year, LinkedIn, Type) — see [`src/utils/csv.js`](./src/utils/csv.js).
 - **AI-drafted emails** — pick a purpose (informational interview, referral, etc.), optionally add what you'd like to learn or connect on, and get a personalized draft. If you've uploaded a resume, the AI can reference specific details from it.
 - **Resume upload** — each member can attach a PDF resume (under 600KB) in My Info, stored alongside their profile in Firestore. It's used as context for AI drafts and can be attached as a real file when sending.
 - **Real email sending with attachments** — "Send email" delivers the message (and resume, if attached) directly via the server, since a `mailto:` link can't carry attachments. "Open in email app" remains as a no-setup fallback.

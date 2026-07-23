@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CONTACT_TYPES } from "../utils/csv.js";
 
 // Below this fraction of alumni having a non-empty `industry` value, the
 // Industry filter is mostly a no-op, so we surface a note instead of letting
@@ -28,6 +29,12 @@ export default function Toolbar({ filters, onChange, industries, industryFillRat
         </button>
       </div>
       <div className={`toolbar-filters${filtersOpen ? " open" : ""}`}>
+        <select value={filters.type} onChange={(e) => onChange({ ...filters, type: e.target.value })}>
+          <option value="all">All Types</option>
+          {CONTACT_TYPES.map((t) => (
+            <option key={t.key} value={t.key}>{t.label}</option>
+          ))}
+        </select>
         <div className="industry-filter-group">
           <select value={filters.industry} onChange={(e) => onChange({ ...filters, industry: e.target.value })}>
             <option value="all">All Industries</option>

@@ -36,7 +36,7 @@ function AppInner() {
   const { myInfo, setMyInfo, outreachLog, setOutreachLog } = useUserData(user?.uid);
   const scheduledEmails = useScheduledEmails(user?.uid);
 
-  const [filters, setFilters] = useState({ query: "", industry: "all", status: "all", sort: "name" });
+  const [filters, setFilters] = useState({ query: "", type: "all", industry: "all", status: "all", sort: "name" });
   const [panelId, setPanelId] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [myInfoOpen, setMyInfoOpen] = useState(false);
@@ -78,6 +78,9 @@ function AppInner() {
       list = list.filter((a) =>
         [a.name, a.company, a.title, a.location, a.industry].join(" ").toLowerCase().includes(q)
       );
+    }
+    if (filters.type !== "all") {
+      list = list.filter((a) => (a.contactType || "alumni") === filters.type);
     }
     if (filters.industry !== "all") {
       list = list.filter((a) => (a.industry || "").trim() === filters.industry);

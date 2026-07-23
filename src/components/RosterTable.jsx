@@ -1,3 +1,5 @@
+import { contactTypeLabel } from "../utils/csv.js";
+
 const STATUS_LABELS = {
   "not-contacted": "Not Contacted",
   contacted: "Contacted",
@@ -11,8 +13,8 @@ export default function RosterTable({ alumni, filtered, statusOf, onOpen, onAddC
       <div className="roster-card">
         <div className="empty-state">
           <h3>The roster is empty</h3>
-          <p>Import your chapter's alumni sheet, or add someone by hand, to start tracking outreach.</p>
-          <button className="btn btn-brass" onClick={onAddClick}>+ Add Alumni</button>
+          <p>Import your chapter's alumni sheet, or add someone by hand — alumni, recruiters, and other industry contacts all belong here — to start tracking outreach.</p>
+          <button className="btn btn-brass" onClick={onAddClick}>+ Add</button>
         </div>
       </div>
     );
@@ -25,6 +27,7 @@ export default function RosterTable({ alumni, filtered, statusOf, onOpen, onAddC
           <tr>
             <th>No.</th>
             <th>Name</th>
+            <th>Type</th>
             <th>Company &amp; Role</th>
             <th>Industry</th>
             <th>Status</th>
@@ -33,8 +36,8 @@ export default function RosterTable({ alumni, filtered, statusOf, onOpen, onAddC
         <tbody>
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={5} style={{ textAlign: "center", color: "var(--muted-foreground)", padding: 30 }}>
-                No alumni match these filters.
+              <td colSpan={6} style={{ textAlign: "center", color: "var(--muted-foreground)", padding: 30 }}>
+                No entries match these filters.
               </td>
             </tr>
           )}
@@ -47,6 +50,9 @@ export default function RosterTable({ alumni, filtered, statusOf, onOpen, onAddC
                 <td className="name-cell" data-label="Name">
                   <strong>{a.name || "—"}</strong>
                   <span>{a.location || ""}</span>
+                </td>
+                <td data-label="Type">
+                  <span className="industry-pill">{contactTypeLabel(a.contactType)}</span>
                 </td>
                 <td data-label="Company & Role">
                   {a.company || "—"}

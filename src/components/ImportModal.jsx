@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FIXED_COLUMNS, parseCsv, matchColumns, rowsToRecords } from "../utils/csv.js";
+import { FIXED_COLUMNS, CONTACT_TYPES, parseCsv, matchColumns, rowsToRecords } from "../utils/csv.js";
 import { useToast } from "./ToastProvider.jsx";
 
 const MANUAL_FIELDS = [
@@ -13,7 +13,10 @@ const MANUAL_FIELDS = [
   { key: "linkedin", label: "LinkedIn" },
 ];
 
-const EMPTY_MANUAL = { name: "", email: "", company: "", title: "", industry: "", location: "", gradYear: "", linkedin: "" };
+const EMPTY_MANUAL = {
+  name: "", email: "", company: "", title: "", industry: "", location: "", gradYear: "", linkedin: "",
+  contactType: "alumni",
+};
 
 export default function ImportModal({ open, onClose, onImport, onManualAdd }) {
   const showToast = useToast();
@@ -61,7 +64,7 @@ export default function ImportModal({ open, onClose, onImport, onManualAdd }) {
     const { added, updated } = await onImport(records);
     resetImportState();
     onClose();
-    showToast(`Imported ${added} new and updated ${updated} existing alumni.`);
+    showToast(`Imported ${added} new and updated ${updated} existing entries.`);
   }
 
   async function submitManual() {
@@ -85,8 +88,12 @@ export default function ImportModal({ open, onClose, onImport, onManualAdd }) {
     <div className={`modal${open ? " open" : ""}`} aria-hidden={!open}>
       <div className="modal-inner">
         <button className="close-x" onClick={close} aria-label="Close">×</button>
-        <h2>Add alumni</h2>
-        <p className="modal-sub">Shared with everyone using this roster — imported or added data is visible to your whole chapter.</p>
+        <h2>Add to the Roster</h2>
+        <p className="modal-sub">
+          Not just alumni — add recruiters and other industry contacts worth staying in touch with too.
+          This roster is shared: whatever you add here is visible to your whole chapter, so adding a contact
+          you know helps every member, not just you — and the same goes the other way.
+        </p>
 
         <div className="tabs">
           <button className={`tab-btn${tab === "csv" ? " active" : ""}`} onClick={() => setTab("csv")}>Import from Google Sheet</button>
@@ -97,6 +104,8 @@ export default function ImportModal({ open, onClose, onImport, onManualAdd }) {
           <p className="modal-sub">
             Your sheet's first row must use these exact column headers (order doesn't matter, extra columns are
             ignored): <strong>{FIXED_COLUMNS.map((c) => c.header).join(", ")}</strong>. Only Name is required.
+            Type should be one of {CONTACT_TYPES.map((t) => t.label).join(", ")} — rows left blank or with an
+            unrecognized value default to Alumni.
           </p>
           <p className="modal-sub">In Google Sheets: File → Download → Comma-separated values, then upload it here. Or paste the data directly.</p>
           <input type="file" accept=".csv,text/csv" onChange={handleFile} />
@@ -125,6 +134,17 @@ export default function ImportModal({ open, onClose, onImport, onManualAdd }) {
         </div>
 
         <div className={`tab-panel${tab === "manual" ? " active" : ""}`}>
+          <div className="field">
+            <label className="field-label">Type</label>
+            <select
+              value={manual.contactType}
+              onChange={(e) => setManual((m) => ({ ...m, contactType: e.target.value }))}
+            >
+              {CONTACT_TYPES.map((t) => (
+                <option key={t.key} value={t.key}>{t.label}</option>
+              ))}
+            </select>
+          </div>
           {MANUAL_FIELDS.map(({ key, label }) => (
             <div className="field" key={key}>
               <label className="field-label">{label}</label>

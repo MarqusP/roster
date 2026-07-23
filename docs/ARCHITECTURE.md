@@ -75,9 +75,12 @@ Populated by CSV import ([`src/utils/csv.js`](../src/utils/csv.js) `FIXED_COLUMN
 
 ```
 name, email, company, title, industry, location, gradYear, linkedin: string
+contactType: "alumni" | "recruiter" | "contact"   -- see below
 createdAt: server timestamp
 ```
 `seq` (the "No. 001" roll number shown in the UI) is **not stored** — it's computed client-side in [`useAlumni.js`](../src/hooks/useAlumni.js) as the index of each doc in `orderBy("createdAt")`, so it's really "order imported," not a stable ID.
+
+The roster isn't alumni-only: `contactType` marks each entry as an alum, a recruiter, or another industry contact (shown as a badge in the table, filterable in the toolbar). It's normalized by [`normalizeContactType()`](../src/utils/csv.js) — any missing, blank, or unrecognized value (including every record imported before this field existed) defaults to `"alumni"`, so no migration was needed for existing data.
 
 ### `users/{uid}`
 
